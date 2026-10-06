@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arena Zero</title>
+
+  <script src="https://cdn.babylonjs.com/babylon.js"></script>
+
+  <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #000;
+      font-family: Arial, sans-serif;
+    }
+
+    #game {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    #menu {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #050505, #10152b);
+      color: white;
+      z-index: 10;
+    }
+
+    #menuBox {
+      text-align: center;
+      background: rgba(0,0,0,0.75);
+      padding: 35px;
+      border-radius: 18px;
+      width: min(85%, 420px);
+      box-shadow: 0 0 35px rgba(0,150,255,0.35);
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 42px;
+      letter-spacing: 3px;
+    }
+
+    .subtitle {
+      color: #aaa;
+      margin-bottom: 25px;
+    }
+
+    button {
+      display: block;
+      width: 100%;
+      margin: 10px 0;
+      padding: 15px;
+      border: none;
+      border-radius: 10px;
+      background: #1769ff;
+      color: white;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #3380ff;
+    }
+
+    #hud {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      color: white;
+      z-index: 5;
+      display: none;
+      text-shadow: 0 2px 4px black;
+    }
+
+    #status {
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    #healthBar {
+      width: 220px;
+      height: 18px;
+      background: #333;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    #health {
+      width: 100%;
+      height: 100%;
+      background: #20d060;
+    }
+
+    #controls {
+      position: absolute;
+      bottom: 15px;
+      left: 15px;
+      color: white;
+      z-index: 5;
+      display: none;
+      background: rgba(0,0,0,0.55);
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+
+<body>
+
+<canvas id="game"></canvas>
+
+<div id="menu">
+  <div id="menuBox">
+    <h1>ARENA ZERO</h1>
+    <div class="subtitle">3D AI SHOOTER</div>
+
+    <button onclick="startGame('Easy')">EASY</button>
+    <button onclick="startGame('Mid')">MID</button>
+    <button onclick="startGame('Difficult')">DIFFICULT</button>
+    <button onclick="startGame('Extremely Hard')">EXTREMELY HARD</button>
+  </div>
+</div>
+
+<div id="hud">
+  <div id="status">READY</div>
+  <div id="healthBar">
+    <div id="health"></div>
+  </div>
+</div>
+
+<div id="controls">
+  WASD = Move<br>
+  Mouse = Look<br>
+  Click = Shoot
+</div>
+
+<script>
+
+const canvas = document.getElementById("game");
+
+const engine = new BABYLON.Engine(
+  canvas,
+  true,
+  {
+    preserveDrawingBuffer: true,
+    stencil: true
+  }
+);
+
+let scene;
+let player;
+let enemy;
+let camera;
+
+let difficulty = "Easy";
+let playerHealth = 100;
+let enemyHealth = 100;
+
+let keys = {};
+
+function createScene() {
+
+  scene = new BABYLON.Scene(engine);
+
+  scene.clearColor = new BABYLON.Color4(0.025, 0.035, 0.06, 1);
+
+  // =========================
+  // LIGHT
+  // =========================
+
+  const light = new BABYLON.HemisphericLight(
+    "mainLight",
+    new BABYLON.Vector3(0, 1, 0),
+    scene
+  );
+
+  light.intensity = 1.1;
+
+  const sun = new BABYLON.DirectionalLight(
+    "sun",
+    new BABYLON.Vector3(-1, -2, -1),
+    scene
+  );
+
+  sun.intensity = 1.5;
+
+  // =========================
+  // GROUND
+  // =========================
+
+  const ground = BABYLON.MeshBuilder.CreateGround(
+    "ground",
+    {
+      width: 80,
+      height: 80
+    },
+    scene
+  );
+
+  const groundMaterial = new BABYLON.StandardMaterial(
+    "groundMaterial",
+    scene
+  );
+
+  groundMaterial.diffuseColor =
+    new BABYLON.Color3(0.08, 0.1, 0.13);
+
+  ground.material = groundMaterial;
+
+  // =========================
+  // ARENA WALLS
+  // =========================
+
+  createWall(0, 2.5, -40, 80, 5, 2);
+  createWall(0, 2.5, 40, 80, 5, 2);
+  createWall(-40, 2.5, 0, 2, 5, 80);
+  createWall(40, 2.5, 0, 2, 5, 80);
+
+  // =========================
+  // PLAYER
+  // =========================
+
+  player = BABYLON.MeshBuilder.CreateBox(
+    "player",
+    {
+      width: 1.2,
+      height: 2,
+      depth: 1.2
+    },
+    scene
+  );
+
+  player.position = new BABYLON.Vector3(0, 1, 10);
+
+  const playerMaterial =
+    new BABYLON.StandardMaterial("playerMaterial", scene);
+
+  playerMaterial.diffuseColor =
+    new BABYLON.Color3(0.05, 0.4, 1);
+
+  player.material = playerMaterial;
+
+  // =========================
+  // ENEMY
+  // =========================
+
+  enemy = BABYLON.MeshBuilder.CreateBox(
+    "enemy",
+    {
+      width: 1.2,
+      height: 2,
+      depth: 1.2
+    },
+    scene
+  );
+
+  enemy.position = new BABYLON.Vector3(0, 1, -10);
+
+  const enemyMaterial =
+    new BABYLON.StandardMaterial("enemyMaterial", scene);
+
+  enemyMaterial.diffuseColor =
+    new BABYLON.Color3(0.9, 0.08, 0.08);
+
+  enemy.material = enemyMaterial;
+
+  // =========================
+  // THIRD-PERSON CAMERA
+  // =========================
+
+  camera = new BABYLON.ArcRotateCamera(
+    "camera",
+    Math.PI,
+    Math.PI / 3,
+    12,
+    player.position,
+    scene
+  );
+
+  camera.attachControl(canvas, true);
+
+  camera.lowerRadiusLimit = 7;
+  camera.upperRadiusLimit = 18;
+
+  camera.lowerBetaLimit = 0.5;
+  camera.upperBetaLimit = 1.4;
+
+  // =========================
+  // CAMERA FOLLOW
+  // =========================
+
+  scene.onBeforeRenderObservable.add(() => {
+
+    if (!player) return;
+
+    camera.target = BABYLON.Vector3.Lerp(
+      camera.target,
+      player.position,
+      0.15
+    );
+
+  });
+
+  return scene;
+}
+
+function createWall(x, y, z, width, height, depth) {
+
+  const wall = BABYLON.MeshBuilder.CreateBox(
+    "wall",
+    {
+      width: width,
+      height: height,
+      depth: depth
+    },
+    scene
+  );
+
+  wall.position = new BABYLON.Vector3(x, y, z);
+
+  const material =
+    new BABYLON.StandardMaterial("wallMaterial", scene);
+
+  material.diffuseColor =
+    new BABYLON.Color3(0.12, 0.14, 0.18);
+
+  wall.material = material;
+}
+
+// =========================
+// GAME START
+// =========================
+
+function startGame(selectedDifficulty) {
+
+  difficulty = selectedDifficulty;
+
+  document.getElementById("menu").style.display = "none";
+  document.getElementById("hud").style.display = "block";
+  document.getElementById("controls").style.display = "block";
+
+  document.getElementById("status").innerText =
+    "DIFFICULTY: " + difficulty;
+
+  playerHealth = 100;
+  enemyHealth = 100;
+
+  player.position.set(0, 1, 10);
+  enemy.position.set(0, 1, -10);
+
+  updateHealth();
+}
+
+// =========================
+// MOVEMENT
+// =========================
+
+window.addEventListener("keydown", (event) => {
+
+  keys[event.key.toLowerCase()] = true;
+
+});
+
+window.addEventListener("keyup", (event) => {
+
+  keys[event.key.toLowerCase()] = false;
+
+});
+
+// =========================
+// SHOOTING
+// =========================
+
+canvas.addEventListener("pointerdown", () => {
+
+  if (!player || !enemy) return;
+
+  shoot();
+
+});
+
+function shoot() {
+
+  if (enemyHealth <= 0) return;
+
+  const ray = scene.createPickingRay(
+    engine.getRenderWidth() / 2,
+    engine.getRenderHeight() / 2,
+    BABYLON.Matrix.Identity(),
+    camera
+  );
+
+  const hit = scene.pickWithRay(
+    ray,
+    mesh => mesh === enemy
+  );
+
+  if (hit.hit) {
+
+    enemyHealth -= 25;
+
+    document.getElementById("status").innerText =
+      "ENEMY HIT!";
+
+    if (enemyHealth <= 0) {
+
+      enemyHealth = 0;
+
+      document.getElementById("status").innerText =
+        "ENEMY ELIMINATED!";
+
+      enemy.setEnabled(false);
+    }
+
+  } else {
+
+    document.getElementById("status").innerText =
+      "SHOT FIRED";
+
+  }
+
+}
+
+// =========================
+// HEALTH
+// =========================
+
+function updateHealth() {
+
+  document.getElementById("health").style.width =
+    playerHealth + "%";
+
+}
+
+// =========================
+// GAME LOOP
+// =========================
+
+scene = createScene();
+
+engine.runRenderLoop(() => {
+
+  if (scene && player) {
+
+    let speed = 0.18;
+
+    if (difficulty === "Difficult") {
+      speed = 0.22;
+    }
+
+    if (difficulty === "Extremely Hard") {
+      speed = 0.27;
+    }
+
+    if (keys["w"]) {
+      player.position.z -= speed;
+    }
+
+    if (keys["s"]) {
+      player.position.z += speed;
+    }
+
+    if (keys["a"]) {
+      player.position.x -= speed;
+    }
+
+    if (keys["d"]) {
+      player.position.x += speed;
+    }
+
+    scene.render();
+
+  }
+
+});
+
+window.addEventListener("resize", () => {
+  engine.resize();
+});
+
+</script>
+
+</body>
+</html>
