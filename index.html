@@ -227,30 +227,108 @@ function createScene() {
   createWall(-40, 2.5, 0, 2, 5, 80);
   createWall(40, 2.5, 0, 2, 5, 80);
 
-  // =========================
-  // PLAYER
-  // =========================
+ // =========================
+// PLAYER CHARACTER
+// =========================
 
-  player = BABYLON.MeshBuilder.CreateBox(
-    "player",
-    {
-      width: 1.2,
-      height: 2,
-      depth: 1.2
-    },
-    scene
-  );
+const playerBody = BABYLON.MeshBuilder.CreateBox(
+  "playerBody",
+  {
+    width: 1.1,
+    height: 1.4,
+    depth: 0.7
+  },
+  scene
+);
 
-  player.position = new BABYLON.Vector3(0, 1, 10);
+playerBody.position = new BABYLON.Vector3(0, 1.2, 10);
 
-  const playerMaterial =
-    new BABYLON.StandardMaterial("playerMaterial", scene);
+const playerMaterial =
+  new BABYLON.StandardMaterial("playerMaterial", scene);
 
-  playerMaterial.diffuseColor =
-    new BABYLON.Color3(0.05, 0.4, 1);
+playerMaterial.diffuseColor =
+  new BABYLON.Color3(0.04, 0.25, 0.9);
 
-  player.material = playerMaterial;
+playerBody.material = playerMaterial;
 
+
+// HEAD
+
+const playerHead = BABYLON.MeshBuilder.CreateSphere(
+  "playerHead",
+  {
+    diameter: 0.65
+  },
+  scene
+);
+
+playerHead.position = new BABYLON.Vector3(0, 2.25, 10);
+
+const headMaterial =
+  new BABYLON.StandardMaterial("headMaterial", scene);
+
+headMaterial.diffuseColor =
+  new BABYLON.Color3(0.75, 0.55, 0.4);
+
+playerHead.material = headMaterial;
+
+
+// GUN
+
+const gun = BABYLON.MeshBuilder.CreateBox(
+  "gun",
+  {
+    width: 0.18,
+    height: 0.18,
+    depth: 1.4
+  },
+  scene
+);
+
+gun.position = new BABYLON.Vector3(0.65, 1.35, 9.65);
+
+const gunMaterial =
+  new BABYLON.StandardMaterial("gunMaterial", scene);
+
+gunMaterial.diffuseColor =
+  new BABYLON.Color3(0.04, 0.04, 0.05);
+
+gun.material = gunMaterial;
+
+
+// PLAYER ROOT
+
+player = BABYLON.MeshBuilder.CreateBox(
+  "player",
+  {
+    width: 0.1,
+    height: 0.1,
+    depth: 0.1
+  },
+  scene
+);
+
+player.isVisible = false;
+
+player.position = new BABYLON.Vector3(0, 1, 10);
+
+
+// FOLLOW PLAYER PARTS
+
+scene.onBeforeRenderObservable.add(() => {
+
+  if (!player) return;
+
+  playerBody.position.x = player.position.x;
+  playerBody.position.z = player.position.z;
+
+  playerHead.position.x = player.position.x;
+  playerHead.position.z = player.position.z;
+
+  gun.position.x = player.position.x + 0.65;
+  gun.position.z = player.position.z - 0.35;
+
+});
   // =========================
   // ENEMY
   // =========================
