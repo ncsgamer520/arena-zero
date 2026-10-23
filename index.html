@@ -11,6 +11,73 @@
       margin: 0;
       padding: 0;
       overflow: hidden;
+      background-color: #111;
+      font-family: sans-serif;
+    }
+    #renderCanvas {
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+    #status {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      color: #00ff00;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-weight: bold;
+      z-index: 10;
+      max-width: 80%;
+      word-wrap: break-word;
+    }
+  </style>
+
+  <!-- Babylon.js Core & GLTF Loaders -->
+  <script src="https://cdn.babylonjs.com/babylon.js"></script>
+  <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+</head>
+<body>
+
+  <div id="status">Loading 3D Character...</div>
+  <canvas id="renderCanvas"></canvas>
+
+  <script>
+    const canvas = document.getElementById("renderCanvas");
+    const statusText = document.getElementById("status");
+    const engine = new BABYLON.Engine(canvas, true);
+
+    const createScene = function () {
+      const scene = new BABYLON.Scene(engine);
+      scene.clearColor = new BABYLON.Color3(0.15, 0.15, 0.2);
+
+      // Camera
+      const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 3, 4, new BABYLON.Vector3(0, 1, 0), scene);
+      camera.attachControl(canvas, true);
+
+      // Light
+      const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+      light.intensity = 1.2;
+
+      // Arena Floor
+      const ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 20, height: 20 }, scene);
+      constHere is the corrected code for `index.html` that fixes the path resolution issue and ensures Babylon.js loads the model files correctly from your main repository directory:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arena Zero</title>
+  <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
       background-color: #1a1a1a;
       font-family: sans-serif;
     }
@@ -32,9 +99,9 @@
     }
   </style>
 
-  <!-- Babylon.js Core & GLTF Loader -->
-  <script src="https://cdn.babylonjs.com/babylon.js"></script>
-  <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+  <!-- Babylon.js Core & Loaders -->
+  <script src="[https://cdn.babylonjs.com/babylon.js](https://cdn.babylonjs.com/babylon.js)"></script>
+  <script src="[https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js](https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js)"></script>
 </head>
 <body>
 
@@ -50,34 +117,36 @@
       const scene = new BABYLON.Scene(engine);
       scene.clearColor = new BABYLON.Color3(0.15, 0.15, 0.2);
 
-      // Camera positioned close to character center
-      const camera = new BABYLON.ArcRotateCamera("camera", 0, Math.PI / 3, 5, new BABYLON.Vector3(0, 1, 0), scene);
+      // Camera
+      const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 3, 5, new BABYLON.Vector3(0, 1, 0), scene);
       camera.attachControl(canvas, true);
 
-      // Lighting
+      // Light
       const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
-      light.intensity = 1.0;
+      light.intensity = 1.2;
 
-      // Arena Floor
+      // Arena Ground
       const ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 20, height: 20 }, scene);
       const groundMat = new BABYLON.StandardMaterial("groundMat", scene);
-      groundMat.diffuseColor = new BABYLON.Color3(0.3, 0.3, 0.35);
+      groundMat.diffuseColor = new BABYLON.Color3(0.2, 0.3, 0.25);
       ground.material = groundMat;
 
-      // Load Model
-      BABYLON.SceneLoader.ImportMeshAsync("", "", "Superhero_Male_FullBody.gltf", scene).then((result) => {
-        statusText.innerText = "Character Loaded!";
-        statusText.style.color = "#00ff00";
-        
-        const character = result.meshes[0];
-        character.position = new BABYLON.Vector3(0, 0, 0);
-        character.scaling = new BABYLON.Vector3(1, 1, 1);
-        camera.target = character.position;
-      }).catch((err) => {
-        statusText.innerText = "Error Loading Model: Check Filename";
-        statusText.style.color = "#ff4444";
-        console.error("Loader Error:", err);
-      });
+      // Load GLTF Model directly from current root path
+      BABYLON.SceneLoader.ImportMeshAsync("", "./", "Superhero_Male_FullBody.gltf", scene)
+        .then((result) => {
+          statusText.innerText = "Character Loaded!";
+          statusText.style.color = "#00ff00";
+
+          const character = result.meshes[0];
+          character.position = new BABYLON.Vector3(0, 0, 0);
+          character.scaling = new BABYLON.Vector3(1, 1, 1);
+          camera.target = new BABYLON.Vector3(0, 1, 0);
+        })
+        .catch((err) => {
+          statusText.innerText = "Error Loading Model";
+          statusText.style.color = "#ff4444";
+          console.error("Loading Error:", err);
+        });
 
       return scene;
     };
