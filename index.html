@@ -61,40 +61,48 @@
       light.intensity = 1.2;
 
       // Arena Ground
-      const ground = BABYLON.MeshBuilder.CreateGround("ground", {Your `index.html` file code looks great! 
+      const ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 20, height: 20 }, scene);
+      const groundMat = new BABYLON.StandardMaterial("groundMat", scene);
+      groundMat.diffuseColor = new BABYLON.Color3(0.2, 0.3, 0.25);
+      ground.material = groundMat;
 
-When the status stays on **"Loading 3D Character..."** without showing a green success or red error message, it means the browser is waiting for the 3D model files (`Superhero_Male_FullBody.gltf` and `Superhero_Male_FullBody.bin`) to be served by GitHub Pages.
+      // Load 3D Character
+      statusText.innerText = "Downloading 3D Model...";
+      
+      BABYLON.SceneLoader.ImportMeshAsync("", "./", "Superhero_Male_FullBody.gltf", scene, function (evt) {
+        if (evt.lengthComputable) {
+          const loadedPercent = ((evt.loaded * 100) / evt.total).toFixed(0);
+          statusText.innerText = "Loading Model: " + loadedPercent + "%";
+        }
+      })
+      .then((result) => {
+        statusText.innerText = "Character Loaded Successfully!";
+        statusText.style.color = "#00ff00";
 
-Here is how to resolve this:
+        const character = result.meshes[0];
+        character.position = new BABYLON.Vector3(0, 0, 0);
+        character.scaling = new BABYLON.Vector3(1, 1, 1);
+        camera.target = new BABYLON.Vector3(0, 1, 0);
+      })
+      .catch((err) => {
+        const detail = err && err.message ? err.message : JSON.stringify(err);
+        statusText.innerText = "Error: " + detail;
+        statusText.style.color = "#ff4444";
+        console.error("Loading Error:", err);
+      });
 
----
+      return scene;
+    };
 
-### Step 1: Force GitHub Pages to Build
+    const scene = createScene();
 
-GitHub Pages sometimes delays processing newly uploaded `.gltf` and `.bin` files. Trigger a fresh build by making a tiny edit to your `index.html`:
+    engine.runRenderLoop(function () {
+      scene.render();
+    });
 
-1. Open your repository: **[github.com/ncsgamer520/arena-zero](https://github.com/ncsgamer520/arena-zero)**.
-2. Click on **`index.html`** and click the **pencil icon (Edit file)**.
-3. Add a single space or line break anywhere in the file.
-4. Scroll down and click the green **Commit changes** button.
-
----
-
-### Step 2: Clear Your Chromebook Browser Cache
-
-After committing, force your browser to fetch the updated files instead of using old cached data:
-
-1. Open your live game site: **[ncsgamer520.github.io/arena-zero/](https://ncsgamer520.github.io/arena-zero/)**.
-2. Press **`Ctrl` + `Shift` + `R`** to hard refresh.
-
----
-
-### Step 3: Check the Browser Console (If it stays stuck)
-
-If the page remains stuck after a hard refresh:
-
-1. Right-click anywhere on the game canvas and select **Inspect** (or press **`Ctrl` + `Shift` + `I`**).
-2. Click the **Console** tab at the top of the developer pane.
-3. Look for any red text highlighting a missing file (such as a texture `.png` file or `.bin` path issue).
-
-What red message or status code appears in your browser console?
+    window.addEventListener("resize", function () {
+      engine.resize();
+    });
+  </script>
+</body>
+</html>
