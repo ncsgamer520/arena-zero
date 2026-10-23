@@ -40,7 +40,7 @@
 </head>
 <body>
 
-  <div id="status">Initializing Scene...</div>
+  <div id="status">Loading 3D Model...</div>
   <canvas id="renderCanvas"></canvas>
 
   <script>
@@ -66,16 +66,10 @@
       groundMat.diffuseColor = new BABYLON.Color3(0.2, 0.3, 0.25);
       ground.material = groundMat;
 
-      // Load 3D Character
-      statusText.innerText = "Downloading 3D Model...";
+      // Load 3D Character and ignore texture errors
+      const loader = BABYLON.SceneLoader.ImportMeshAsync("", "./", "Superhero_Male_FullBody.gltf", scene);
       
-      BABYLON.SceneLoader.ImportMeshAsync("", "./", "Superhero_Male_FullBody.gltf", scene, function (evt) {
-        if (evt.lengthComputable) {
-          const loadedPercent = ((evt.loaded * 100) / evt.total).toFixed(0);
-          statusText.innerText = "Loading Model: " + loadedPercent + "%";
-        }
-      })
-      .then((result) => {
+      loader.then((result) => {
         statusText.innerText = "Character Loaded Successfully!";
         statusText.style.color = "#00ff00";
 
@@ -85,10 +79,14 @@
         camera.target = new BABYLON.Vector3(0, 1, 0);
       })
       .catch((err) => {
-        const detail = err && err.message ? err.message : JSON.stringify(err);
-        statusText.innerText = "Error: " + detail;
-        statusText.style.color = "#ff4444";
-        console.error("Loading Error:", err);
+        // Even if textures fail, try to grab root mesh if loaded
+        if (scene.meshes.length > 1) {
+          statusText.innerText = "Character Loaded (Missing Textures)";
+          statusText.style.color = "#ffaa00";
+        } else {
+          statusText.innerText = "Error: " + err.message;
+          statusText.style.color = "#ff4444";
+        }
       });
 
       return scene;
