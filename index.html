@@ -55,6 +55,28 @@
       // Camera
       const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 3, 5, new BABYLON.Vector3(0, 1, 0), scene);
       camera.attachControl(canvas, true);
+     
+      // Create a default environment with automatic camera framing and lighting
+      const helper = scene.createDefaultEnvironment({
+        createGround: true,
+        groundSize: 20,
+        enableGroundShadow: true,
+      });
+      helper.ground.material.diffuseColor = new BABYLON.Color3(0.2, 0.3, 0.25);
+
+      // Load 3D Character and automatically frame it on screen
+      BABYLON.SceneLoader.ImportMeshAsync("", "./", "Superhero_Male_FullBody.gltf", scene)
+        .then((result) => {
+          statusText.innerText = "Character Loaded Successfully!";
+          statusText.style.color = "#00ff00";
+
+          // Automatically position and scale camera to fit the loaded character
+          scene.createDefaultCameraOrLight(true, true, true);
+        })
+        .catch((err) => {
+          statusText.innerText = "Error: " + err.message;
+          statusText.style.color = "#ff4444";
+        });
 
       // Light
       const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
